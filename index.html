@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Haiku Validator</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: Georgia, 'Times New Roman', serif;
+      background: #f5f0e8;
+      color: #2c2c2c;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      max-width: 480px;
+      width: 100%;
+      padding: 48px 32px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: normal;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: #888;
+      margin-bottom: 40px;
+      font-style: italic;
+    }
+
+    .line-group {
+      margin-bottom: 16px;
+      text-align: left;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      color: #999;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 10px 14px;
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 1.1rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background: #fff;
+      color: #2c2c2c;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus {
+      border-color: #999;
+    }
+
+    .syllable-count {
+      font-size: 0.85rem;
+      color: #aaa;
+      min-width: 28px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      transition: color 0.2s;
+    }
+
+    .syllable-count.valid { color: #5a8a5a; }
+    .syllable-count.invalid { color: #b55; }
+
+    .divider {
+      width: 60px;
+      height: 1px;
+      background: #ccc;
+      margin: 32px auto;
+    }
+
+    .result {
+      font-size: 1.2rem;
+      min-height: 1.6em;
+      transition: opacity 0.3s;
+    }
+
+    .result.valid {
+      color: #5a8a5a;
+    }
+
+    .result.invalid {
+      color: #b55;
+    }
+
+    .result.empty {
+      color: #ccc;
+    }
+
+    .pattern {
+      font-size: 0.85rem;
+      color: #aaa;
+      margin-top: 8px;
+      font-variant-numeric: tabular-nums;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Haiku Validator</h1>
+    <p class="subtitle">5 &middot; 7 &middot; 5</p>
+
+    <div class="line-group">
+      <label>First line (5 syllables)</label>
+      <div class="input-row">
+        <input type="text" id="line1" placeholder="the old silent pond" autocomplete="off">
+        <span class="syllable-count" id="count1">&mdash;</span>
+      </div>
+    </div>
+
+    <div class="line-group">
+      <label>Second line (7 syllables)</label>
+      <div class="input-row">
+        <input type="text" id="line2" placeholder="a frog jumps into the pond" autocomplete="off">
+        <span class="syllable-count" id="count2">&mdash;</span>
+      </div>
+    </div>
+
+    <div class="line-group">
+      <label>Third line (5 syllables)</label>
+      <div class="input-row">
+        <input type="text" id="line3" placeholder="splash silence again" autocomplete="off">
+        <span class="syllable-count" id="count3">&mdash;</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="result empty" id="result">type your haiku above</div>
+    <div class="pattern" id="pattern"></div>
+  </div>
+
+  <script>
+    function countSyllables(word) {
+      word = word.toLowerCase().replace(/[^a-z]/g, '');
+      if (!word) return 0;
+
+      // Special common words where heuristics fail
+      const exceptions = {
+        'the': 1, 'he': 1, 'she': 1, 'me': 1, 'we': 1, 'be': 1,
+        'are': 1, 'were': 1, 'here': 1, 'there': 1, 'where': 1,
+        'every': 3, 'everything': 4, 'everyone': 3,
+        'beautiful': 3, 'different': 3, 'evening': 2, 'interesting': 4,
+        'quietly': 3, 'lonely': 2, 'lovely': 2,
+        'area': 3, 'idea': 3, 'real': 1, 'poem': 2, 'poet': 2,
+        'fire': 1, 'hour': 1, 'our': 1, 'flower': 2, 'power': 2,
+        'orange': 2, 'purple': 2, 'people': 2, 'little': 2,
+        'silence': 2, 'silent': 2, 'ocean': 2,
+        'being': 2, 'seeing': 2, 'doing': 2, 'going': 2,
+        'prayer': 1, 'layer': 2, 'player': 2,
+      };
+      if (exceptions[word] !== undefined) return exceptions[word];
+
+      let count = 0;
+      let prevVowel = false;
+
+      for (let i = 0; i < word.length; i++) {
+        const isVowel = 'aeiouy'.includes(word[i]);
+        if (isVowel && !prevVowel) count++;
+        prevVowel = isVowel;
+      }
+
+      // Silent e at end
+      if (word.endsWith('e') && !word.endsWith('le') && count > 1) count--;
+
+      // -ed endings (walked, jumped — not "red", "bed")
+      if (word.endsWith('ed') && !word.endsWith('ted') && !word.endsWith('ded') && word.length > 3) {
+        count = Math.max(1, count - 1);
+      }
+
+      return Math.max(1, count);
+    }
+
+    function countLineSyllables(line) {
+      const words = line.trim().split(/\s+/).filter(w => w.replace(/[^a-z]/gi, ''));
+      if (words.length === 0 || (words.length === 1 && !words[0].replace(/[^a-z]/gi, ''))) return 0;
+      return words.reduce((sum, w) => sum + countSyllables(w), 0);
+    }
+
+    const line1 = document.getElementById('line1');
+    const line2 = document.getElementById('line2');
+    const line3 = document.getElementById('line3');
+    const count1 = document.getElementById('count1');
+    const count2 = document.getElementById('count2');
+    const count3 = document.getElementById('count3');
+    const result = document.getElementById('result');
+    const pattern = document.getElementById('pattern');
+
+    function update() {
+      const t1 = line1.value.trim();
+      const t2 = line2.value.trim();
+      const t3 = line3.value.trim();
+
+      const s1 = t1 ? countLineSyllables(t1) : 0;
+      const s2 = t2 ? countLineSyllables(t2) : 0;
+      const s3 = t3 ? countLineSyllables(t3) : 0;
+
+      const allEmpty = !t1 && !t2 && !t3;
+
+      // Update counts
+      function setCount(el, syllables, target, hasText) {
+        if (!hasText) {
+          el.textContent = '\u2014';
+          el.className = 'syllable-count';
+        } else {
+          el.textContent = syllables;
+          el.className = 'syllable-count ' + (syllables === target ? 'valid' : 'invalid');
+        }
+      }
+
+      setCount(count1, s1, 5, !!t1);
+      setCount(count2, s2, 7, !!t2);
+      setCount(count3, s3, 5, !!t3);
+
+      // Update result
+      if (allEmpty) {
+        result.textContent = 'type your haiku above';
+        result.className = 'result empty';
+        pattern.textContent = '';
+      } else if (!t1 || !t2 || !t3) {
+        result.textContent = 'fill in all three lines';
+        result.className = 'result empty';
+        pattern.textContent = '';
+      } else if (s1 === 5 && s2 === 7 && s3 === 5) {
+        result.textContent = 'valid haiku';
+        result.className = 'result valid';
+        pattern.textContent = s1 + ' \u00b7 ' + s2 + ' \u00b7 ' + s3;
+      } else {
+        result.textContent = 'not a haiku';
+        result.className = 'result invalid';
+        pattern.textContent = s1 + ' \u00b7 ' + s2 + ' \u00b7 ' + s3;
+      }
+    }
+
+    line1.addEventListener('input', update);
+    line2.addEventListener('input', update);
+    line3.addEventListener('input', update);
+  </script>
+</body>
+</html>
