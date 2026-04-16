@@ -137,9 +137,45 @@
       border-color: #999;
     }
 
-    .copy-btn.copied {
+    .copy-btn.copied, .copy-btn.saved {
       color: #5a8a5a;
       border-color: #5a8a5a;
+    }
+
+    .buttons {
+      margin-top: 24px;
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .buttons .copy-btn {
+      margin-top: 0;
+    }
+
+    .haiku-list {
+      margin-top: 40px;
+      text-align: center;
+    }
+
+    .haiku-list h2 {
+      font-size: 1rem;
+      font-weight: normal;
+      color: #999;
+      margin-bottom: 20px;
+      letter-spacing: 0.05em;
+    }
+
+    .haiku-entry {
+      margin-bottom: 24px;
+      line-height: 1.8;
+      font-size: 1.05rem;
+      color: #555;
+    }
+
+    .haiku-entry + .haiku-entry {
+      padding-top: 24px;
+      border-top: 1px solid #e0dbd3;
     }
   </style>
 </head>
@@ -176,8 +212,13 @@
 
     <div class="result empty" id="result">type your haiku above</div>
     <div class="pattern" id="pattern"></div>
-    <button class="copy-btn" id="copyBtn">copy haiku</button>
-    <button class="copy-btn" id="clearBtn">clear</button>
+    <div class="buttons">
+      <button class="copy-btn" id="saveBtn">save</button>
+      <button class="copy-btn" id="copyBtn">copy haiku</button>
+      <button class="copy-btn" id="clearBtn">clear</button>
+    </div>
+
+    <div class="haiku-list" id="haikuList"></div>
   </div>
 
   <script type="module">
@@ -257,6 +298,49 @@
       });
     });
 
+    const haikuList = document.getElementById('haikuList');
+
+    async function loadHaikus() {
+      try {
+        const res = await fetch('/api/haikus');
+        const haikus = await res.json();
+        if (haikus.length === 0) {
+          haikuList.innerHTML = '';
+          return;
+        }
+        haikuList.innerHTML = '<h2>saved haikus</h2>' +
+          haikus.map(h =>
+            '<div class="haiku-entry">' +
+              h.line1 + '<br>' + h.line2 + '<br>' + h.line3 +
+            '</div>'
+          ).join('');
+      } catch (e) { /* ignore */ }
+    }
+
+    const saveBtn = document.getElementById('saveBtn');
+    saveBtn.addEventListener('click', async () => {
+      const l1 = line1.value.trim();
+      const l2 = line2.value.trim();
+      const l3 = line3.value.trim();
+      if (!l1 || !l2 || !l3) return;
+      try {
+        const res = await fetch('/api/haikus', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ line1: l1, line2: l2, line3: l3 }),
+        });
+        if (res.ok) {
+          saveBtn.textContent = 'saved!';
+          saveBtn.classList.add('saved');
+          setTimeout(() => {
+            saveBtn.textContent = 'save';
+            saveBtn.classList.remove('saved');
+          }, 1500);
+          loadHaikus();
+        }
+      } catch (e) { /* ignore */ }
+    });
+
     const clearBtn = document.getElementById('clearBtn');
     clearBtn.addEventListener('click', () => {
       inputs.forEach(input => { input.value = ''; });
@@ -277,6 +361,8 @@
         }, 1500);
       });
     });
+
+    loadHaikus();
   </script>
 </body>
 </html>
