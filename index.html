@@ -177,6 +177,7 @@
     <div class="result empty" id="result">type your haiku above</div>
     <div class="pattern" id="pattern"></div>
     <button class="copy-btn" id="copyBtn">copy haiku</button>
+    <button class="copy-btn" id="clearBtn">clear</button>
   </div>
 
   <script type="module">
@@ -254,6 +255,13 @@
           update();
         }
       });
+    });
+
+    const clearBtn = document.getElementById('clearBtn');
+    clearBtn.addEventListener('click', () => {
+      inputs.forEach(input => { input.value = ''; });
+      update();
+      line1.focus();
     });
 
     const copyBtn = document.getElementById('copyBtn');
