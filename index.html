@@ -242,9 +242,19 @@
       }
     }
 
-    line1.addEventListener('input', update);
-    line2.addEventListener('input', update);
-    line3.addEventListener('input', update);
+    const inputs = [line1, line2, line3];
+    inputs.forEach(input => {
+      input.addEventListener('input', update);
+      input.addEventListener('paste', (e) => {
+        const text = e.clipboardData.getData('text');
+        const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+        if (lines.length >= 2) {
+          e.preventDefault();
+          lines.slice(0, 3).forEach((l, i) => { inputs[i].value = l; });
+          update();
+        }
+      });
+    });
 
     const copyBtn = document.getElementById('copyBtn');
     copyBtn.addEventListener('click', () => {
