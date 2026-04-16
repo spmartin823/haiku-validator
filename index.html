@@ -118,6 +118,29 @@
       margin-top: 8px;
       font-variant-numeric: tabular-nums;
     }
+
+    .copy-btn {
+      margin-top: 24px;
+      padding: 8px 20px;
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 0.9rem;
+      color: #888;
+      background: transparent;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .copy-btn:hover {
+      color: #2c2c2c;
+      border-color: #999;
+    }
+
+    .copy-btn.copied {
+      color: #5a8a5a;
+      border-color: #5a8a5a;
+    }
   </style>
 </head>
 <body>
@@ -153,53 +176,15 @@
 
     <div class="result empty" id="result">type your haiku above</div>
     <div class="pattern" id="pattern"></div>
+    <button class="copy-btn" id="copyBtn">copy haiku</button>
   </div>
 
-  <script>
-    function countSyllables(word) {
-      word = word.toLowerCase().replace(/[^a-z]/g, '');
-      if (!word) return 0;
-
-      // Special common words where heuristics fail
-      const exceptions = {
-        'the': 1, 'he': 1, 'she': 1, 'me': 1, 'we': 1, 'be': 1,
-        'are': 1, 'were': 1, 'here': 1, 'there': 1, 'where': 1,
-        'every': 3, 'everything': 4, 'everyone': 3,
-        'beautiful': 3, 'different': 3, 'evening': 2, 'interesting': 4,
-        'quietly': 3, 'lonely': 2, 'lovely': 2,
-        'area': 3, 'idea': 3, 'real': 1, 'poem': 2, 'poet': 2,
-        'fire': 1, 'hour': 1, 'our': 1, 'flower': 2, 'power': 2,
-        'orange': 2, 'purple': 2, 'people': 2, 'little': 2,
-        'silence': 2, 'silent': 2, 'ocean': 2,
-        'being': 2, 'seeing': 2, 'doing': 2, 'going': 2,
-        'prayer': 1, 'layer': 2, 'player': 2,
-      };
-      if (exceptions[word] !== undefined) return exceptions[word];
-
-      let count = 0;
-      let prevVowel = false;
-
-      for (let i = 0; i < word.length; i++) {
-        const isVowel = 'aeiouy'.includes(word[i]);
-        if (isVowel && !prevVowel) count++;
-        prevVowel = isVowel;
-      }
-
-      // Silent e at end
-      if (word.endsWith('e') && !word.endsWith('le') && count > 1) count--;
-
-      // -ed endings (walked, jumped — not "red", "bed")
-      if (word.endsWith('ed') && !word.endsWith('ted') && !word.endsWith('ded') && word.length > 3) {
-        count = Math.max(1, count - 1);
-      }
-
-      return Math.max(1, count);
-    }
-
+  <script type="module">
+    import { syllable } from 'https://esm.sh/syllable@2';
     function countLineSyllables(line) {
-      const words = line.trim().split(/\s+/).filter(w => w.replace(/[^a-z]/gi, ''));
-      if (words.length === 0 || (words.length === 1 && !words[0].replace(/[^a-z]/gi, ''))) return 0;
-      return words.reduce((sum, w) => sum + countSyllables(w), 0);
+      const text = line.trim();
+      if (!text) return 0;
+      return syllable(text);
     }
 
     const line1 = document.getElementById('line1');
@@ -260,6 +245,20 @@
     line1.addEventListener('input', update);
     line2.addEventListener('input', update);
     line3.addEventListener('input', update);
+
+    const copyBtn = document.getElementById('copyBtn');
+    copyBtn.addEventListener('click', () => {
+      const haiku = [line1.value, line2.value, line3.value]
+        .map(l => l.trim()).join('\n');
+      navigator.clipboard.writeText(haiku).then(() => {
+        copyBtn.textContent = 'copied!';
+        copyBtn.classList.add('copied');
+        setTimeout(() => {
+          copyBtn.textContent = 'copy haiku';
+          copyBtn.classList.remove('copied');
+        }, 1500);
+      });
+    });
   </script>
 </body>
 </html>
