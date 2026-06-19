@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Limerick Editor</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: Georgia, 'Times New Roman', serif;
+      background: #f5f0e8;
+      color: #2c2c2c;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 0;
+    }
+
+    .container {
+      max-width: 520px;
+      width: 100%;
+      padding: 48px 32px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: normal;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: #888;
+      margin-bottom: 40px;
+      font-style: italic;
+    }
+
+    .nav {
+      margin-bottom: 32px;
+    }
+
+    .nav a {
+      color: #888;
+      text-decoration: none;
+      font-size: 0.85rem;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid transparent;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .nav a:hover {
+      color: #2c2c2c;
+      border-bottom-color: #999;
+    }
+
+    .line-group {
+      margin-bottom: 16px;
+      text-align: left;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      color: #999;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 10px 14px;
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 1.1rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background: #fff;
+      color: #2c2c2c;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus {
+      border-color: #999;
+    }
+
+    .syllable-count {
+      font-size: 0.85rem;
+      color: #aaa;
+      min-width: 32px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      transition: color 0.2s;
+    }
+
+    .syllable-count.valid { color: #5a8a5a; }
+    .syllable-count.invalid { color: #b55; }
+
+    .rhyme-badge {
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 3px;
+      background: #e8e4dc;
+      color: #888;
+      min-width: 24px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .rhyme-badge.match { background: #d4e8d4; color: #3a6a3a; }
+    .rhyme-badge.mismatch { background: #f0d4d4; color: #8a3a3a; }
+
+    .divider {
+      width: 60px;
+      height: 1px;
+      background: #ccc;
+      margin: 32px auto;
+    }
+
+    .result {
+      font-size: 1.2rem;
+      min-height: 1.6em;
+      transition: opacity 0.3s;
+    }
+
+    .result.valid {
+      color: #5a8a5a;
+    }
+
+    .result.invalid {
+      color: #b55;
+    }
+
+    .result.empty {
+      color: #ccc;
+    }
+
+    .pattern {
+      font-size: 0.85rem;
+      color: #aaa;
+      margin-top: 8px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .rhyme-summary {
+      font-size: 0.85rem;
+      color: #aaa;
+      margin-top: 4px;
+    }
+
+    .copy-btn {
+      margin-top: 24px;
+      padding: 8px 20px;
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 0.9rem;
+      color: #888;
+      background: transparent;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .copy-btn:hover {
+      color: #2c2c2c;
+      border-color: #999;
+    }
+
+    .copy-btn.copied, .copy-btn.saved {
+      color: #5a8a5a;
+      border-color: #5a8a5a;
+    }
+
+    .buttons {
+      margin-top: 24px;
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .buttons .copy-btn {
+      margin-top: 0;
+    }
+
+    .limerick-list {
+      margin-top: 40px;
+      text-align: center;
+    }
+
+    .limerick-list h2 {
+      font-size: 1rem;
+      font-weight: normal;
+      color: #999;
+      margin-bottom: 20px;
+      letter-spacing: 0.05em;
+    }
+
+    .limerick-entry {
+      margin-bottom: 24px;
+      line-height: 1.8;
+      font-size: 1.05rem;
+      color: #555;
+    }
+
+    .limerick-entry + .limerick-entry {
+      padding-top: 24px;
+      border-top: 1px solid #e0dbd3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="nav">
+      <a href="index.html">Haiku Validator</a>
+    </div>
+
+    <h1>Limerick Editor</h1>
+    <p class="subtitle">AABBA &middot; 8-9 &middot; 8-9 &middot; 5-6 &middot; 5-6 &middot; 8-9</p>
+
+    <div class="line-group">
+      <label>Line 1 (A, 8-9 syllables)</label>
+      <div class="input-row">
+        <input type="text" id="line1" placeholder="A limerick's form is quite clear" autocomplete="off">
+        <span class="syllable-count" id="count1">&mdash;</span>
+        <span class="rhyme-badge" id="rhyme1">A</span>
+      </div>
+    </div>
+
+    <div class="line-group">
+      <label>Line 2 (A, 8-9 syllables)</label>
+      <div class="input-row">
+        <input type="text" id="line2" placeholder="With five lines that bring us good cheer" autocomplete="off">
+        <span class="syllable-count" id="count2">&mdash;</span>
+        <span class="rhyme-badge" id="rhyme2">A</span>
+      </div>
+    </div>
+
+    <div class="line-group">
+      <label>Line 3 (B, 5-6 syllables)</label>
+      <div class="input-row">
+        <input type="text" id="line3" placeholder="The rhythm is tight" autocomplete="off">
+        <span class="syllable-count" id="count3">&mdash;</span>
+        <span class="rhyme-badge" id="rhyme3">B</span>
+      </div>
+    </div>
+
+    <div class="line-group">
+      <label>Line 4 (B, 5-6 syllables)</label>
+      <div class="input-row">
+        <input type="text" id="line4" placeholder="The rhymes must be right" autocomplete="off">
+        <span class="syllable-count" id="count4">&mdash;</span>
+        <span class="rhyme-badge" id="rhyme4">B</span>
+      </div>
+    </div>
+
+    <div class="line-group">
+      <label>Line 5 (A, 8-9 syllables)</label>
+      <div class="input-row">
+        <input type="text" id="line5" placeholder="A form we all hold very dear" autocomplete="off">
+        <span class="syllable-count" id="count5">&mdash;</span>
+        <span class="rhyme-badge" id="rhyme5">A</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="result empty" id="result">type your limerick above</div>
+    <div class="pattern" id="pattern"></div>
+    <div class="rhyme-summary" id="rhymeSummary"></div>
+    <div class="buttons">
+      <button class="copy-btn" id="saveBtn">save</button>
+      <button class="copy-btn" id="copyBtn">copy limerick</button>
+      <button class="copy-btn" id="clearBtn">clear</button>
+    </div>
+
+    <div class="limerick-list" id="limerickList"></div>
+  </div>
+
+  <script type="module">
+    import syllable from 'https://esm.sh/syllable@2';
+
+    function countLineSyllables(line) {
+      const text = line.trim();
+      if (!text) return 0;
+      return syllable(text);
+    }
+
+    function getLastWord(text) {
+      const cleaned = text.trim().toLowerCase().replace(/[^a-z\s]/g, '');
+      const words = cleaned.split(/\s+/).filter(Boolean);
+      return words[words.length - 1] || '';
+    }
+
+    function getRhymeSound(word) {
+      if (!word) return '';
+      // Simple vowel-ending rhyme detection
+      const vowels = 'aeiou';
+      let lastVowelIndex = -1;
+      for (let i = word.length - 1; i >= 0; i--) {
+        if (vowels.includes(word[i])) {
+          lastVowelIndex = i;
+          break;
+        }
+      }
+      if (lastVowelIndex === -1) return word;
+      return word.slice(lastVowelIndex);
+    }
+
+    function wordsRhyme(w1, w2) {
+      if (!w1 || !w2) return false;
+      if (w1 === w2) return false; // same word doesn't rhyme
+      const r1 = getRhymeSound(w1);
+      const r2 = getRhymeSound(w2);
+      return r1 === r2 && r1.length > 0;
+    }
+
+    const line1 = document.getElementById('line1');
+    const line2 = document.getElementById('line2');
+    const line3 = document.getElementById('line3');
+    const line4 = document.getElementById('line4');
+    const line5 = document.getElementById('line5');
+    const count1 = document.getElementById('count1');
+    const count2 = document.getElementById('count2');
+    const count3 = document.getElementById('count3');
+    const count4 = document.getElementById('count4');
+    const count5 = document.getElementById('count5');
+    const rhyme1 = document.getElementById('rhyme1');
+    const rhyme2 = document.getElementById('rhyme2');
+    const rhyme3 = document.getElementById('rhyme3');
+    const rhyme4 = document.getElementById('rhyme4');
+    const rhyme5 = document.getElementById('rhyme5');
+    const result = document.getElementById('result');
+    const pattern = document.getElementById('pattern');
+    const rhymeSummary = document.getElementById('rhymeSummary');
+
+    const TARGETS = [8, 8, 5, 5, 8];
+    const TARGET_RANGES = [
+      { min: 8, max: 9 },
+      { min: 8, max: 9 },
+      { min: 5, max: 6 },
+      { min: 5, max: 6 },
+      { min: 8, max: 9 },
+    ];
+
+    function inRange(s, i) {
+      return s >= TARGET_RANGES[i].min && s <= TARGET_RANGES[i].max;
+    }
+
+    function update() {
+      const texts = [
+        line1.value.trim(),
+        line2.value.trim(),
+        line3.value.trim(),
+        line4.value.trim(),
+        line5.value.trim(),
+      ];
+
+      const syllables = texts.map((t, i) => t ? countLineSyllables(t) : 0);
+      const allEmpty = texts.every(t => !t);
+      const allFilled = texts.every(t => !!t);
+
+      // Update syllable counts
+      const counts = [count1, count2, count3, count4, count5];
+      counts.forEach((el, i) => {
+        if (!texts[i]) {
+          el.textContent = '\u2014';
+          el.className = 'syllable-count';
+        } else {
+          el.textContent = syllables[i];
+          el.className = 'syllable-count ' + (inRange(syllables[i], i) ? 'valid' : 'invalid');
+        }
+      });
+
+      // Update rhyme badges
+      const lastWords = texts.map(t => getLastWord(t));
+      const aRhyme = lastWords[0] && lastWords[1] ? wordsRhyme(lastWords[0], lastWords[1]) : false;
+      const aRhyme2 = lastWords[0] && lastWords[4] ? wordsRhyme(lastWords[0], lastWords[4]) : false;
+      const aRhyme3 = lastWords[1] && lastWords[4] ? wordsRhyme(lastWords[1], lastWords[4]) : false;
+      const bRhyme = lastWords[2] && lastWords[3] ? wordsRhyme(lastWords[2], lastWords[3]) : false;
+
+      const rhymes = [rhyme1, rhyme2, rhyme3, rhyme4, rhyme5];
+      rhymes.forEach((el, i) => {
+        if (!texts[i]) {
+          el.textContent = i < 2 || i === 4 ? 'A' : 'B';
+          el.className = 'rhyme-badge';
+        } else {
+          const label = i < 2 || i === 4 ? 'A' : 'B';
+          let match = false;
+          if (i === 0) match = aRhyme || aRhyme2;
+          else if (i === 1) match = aRhyme || aRhyme3;
+          else if (i === 2) match = bRhyme;
+          else if (i === 3) match = bRhyme;
+          else if (i === 4) match = aRhyme2 || aRhyme3;
+          el.textContent = label;
+          el.className = 'rhyme-badge ' + (match ? 'match' : 'mismatch');
+        }
+      });
+
+      // Update result
+      if (allEmpty) {
+        result.textContent = 'type your limerick above';
+        result.className = 'result empty';
+        pattern.textContent = '';
+        rhymeSummary.textContent = '';
+      } else if (!allFilled) {
+        result.textContent = 'fill in all five lines';
+        result.className = 'result empty';
+        pattern.textContent = '';
+        rhymeSummary.textContent = '';
+      } else {
+        const sylOk = syllables.every((s, i) => inRange(s, i));
+        const rhymeOk = (aRhyme || aRhyme2 || aRhyme3) && bRhyme;
+
+        if (sylOk && rhymeOk) {
+          result.textContent = 'valid limerick';
+          result.className = 'result valid';
+        } else {
+          result.textContent = 'not a limerick';
+          result.className = 'result invalid';
+        }
+
+        pattern.textContent = syllables.join(' \u00b7 ');
+
+        const parts = [];
+        if (!sylOk) parts.push('syllables off');
+        if (!rhymeOk) parts.push('rhyme scheme off');
+        rhymeSummary.textContent = parts.length ? parts.join(', ') : 'AABBA rhyme, syllables match';
+      }
+    }
+
+    const inputs = [line1, line2, line3, line4, line5];
+    inputs.forEach(input => {
+      input.addEventListener('input', update);
+      input.addEventListener('paste', (e) => {
+        const text = e.clipboardData.getData('text');
+        const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+        if (lines.length >= 2) {
+          e.preventDefault();
+          lines.slice(0, 5).forEach((l, i) => { if (inputs[i]) inputs[i].value = l; });
+          update();
+        }
+      });
+    });
+
+    const limerickList = document.getElementById('limerickList');
+
+    async function loadLimericks() {
+      try {
+        const res = await fetch('/api/limericks');
+        if (!res.ok) return;
+        const limericks = await res.json();
+        if (limericks.length === 0) {
+          limerickList.innerHTML = '';
+          return;
+        }
+        limerickList.innerHTML = '<h2>saved limericks</h2>' +
+          limericks.map(l =>
+            '<div class="limerick-entry">' +
+              l.line1 + '<br>' + l.line2 + '<br>' + l.line3 + '<br>' + l.line4 + '<br>' + l.line5 +
+            '</div>'
+          ).join('');
+      } catch (e) { /* ignore */ }
+    }
+
+    const saveBtn = document.getElementById('saveBtn');
+    saveBtn.addEventListener('click', async () => {
+      const l1 = line1.value.trim();
+      const l2 = line2.value.trim();
+      const l3 = line3.value.trim();
+      const l4 = line4.value.trim();
+      const l5 = line5.value.trim();
+      if (!l1 || !l2 || !l3 || !l4 || !l5) return;
+      try {
+        const res = await fetch('/api/limericks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ line1: l1, line2: l2, line3: l3, line4: l4, line5: l5 }),
+        });
+        if (res.ok) {
+          saveBtn.textContent = 'saved!';
+          saveBtn.classList.add('saved');
+          setTimeout(() => {
+            saveBtn.textContent = 'save';
+            saveBtn.classList.remove('saved');
+          }, 1500);
+          loadLimericks();
+        }
+      } catch (e) { /* ignore */ }
+    });
+
+    const clearBtn = document.getElementById('clearBtn');
+    clearBtn.addEventListener('click', () => {
+      inputs.forEach(input => { input.value = ''; });
+      update();
+      line1.focus();
+    });
+
+    const copyBtn = document.getElementById('copyBtn');
+    copyBtn.addEventListener('click', () => {
+      const limerick = [line1.value, line2.value, line3.value, line4.value, line5.value]
+        .map(l => l.trim()).join('\n');
+      navigator.clipboard.writeText(limerick).then(() => {
+        copyBtn.textContent = 'copied!';
+        copyBtn.classList.add('copied');
+        setTimeout(() => {
+          copyBtn.textContent = 'copy limerick';
+          copyBtn.classList.remove('copied');
+        }, 1500);
+      });
+    });
+
+    loadLimericks();
+  </script>
+</body>
+</html>

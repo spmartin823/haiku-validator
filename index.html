@@ -31,6 +31,24 @@
       margin-bottom: 8px;
     }
 
+    .nav {
+      margin-bottom: 32px;
+    }
+
+    .nav a {
+      color: #888;
+      text-decoration: none;
+      font-size: 0.85rem;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid transparent;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .nav a:hover {
+      color: #2c2c2c;
+      border-bottom-color: #999;
+    }
+
     .subtitle {
       font-size: 0.9rem;
       color: #888;
@@ -181,6 +199,10 @@
 </head>
 <body>
   <div class="container">
+    <div class="nav">
+      <a href="limerick.html">Limerick Editor</a>
+    </div>
+
     <h1>Haiku Validator</h1>
     <p class="subtitle">5 &middot; 7 &middot; 5</p>
 
